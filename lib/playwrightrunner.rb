@@ -20,15 +20,15 @@ module PlaywrightRunner
     config
   end
 
-  def mermaids_to_images(passed_config, src: '.', dest: '.', type: 'pdf')
+  def mermaids_to_images(passed_config, src: '.', dest: '.', type: 'pdf', timeout: 10_000)
     config = default_config(passed_config)
     Playwright.create(playwright_cli_executable_path: config[:playwright_path]) do |playwright|
-      playwright.chromium.launch(headless: true) do |browser|
+      playwright.chromium.launch(headless: true, timeout: timeout) do |browser|
         page = browser.new_page
         Dir.glob(File.join(src, '*.html')).each do |entry|
           id = File.basename(entry).sub('.html', '')
-          page.goto("file:///#{File.absolute_path(entry)}")
-          page.locator('svg').wait_for(state: 'visible')
+          page.goto("file:///#{File.absolute_path(entry)}", timeout: timeout)
+          page.locator('svg').wait_for(state: 'visible', timeout: timeout)
           sleep(1)
           1.upto(4) do
             bounds = page.locator('svg').bounding_box
@@ -46,7 +46,8 @@ module PlaywrightRunner
               page.set_viewport_size({ width: x + width, height: y + height })
 
               if type == 'png'
-                page.screenshot(path: File.join(dest, "#{id}.png"), clip: { x: x, y: y, width: width, height: height })
+                page.screenshot(path: File.join(dest, "#{id}.png"), clip: { x: x, y: y, width: width, height: height },
+                                timeout: timeout)
                 break
               end
 
